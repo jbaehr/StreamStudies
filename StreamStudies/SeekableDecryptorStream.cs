@@ -12,6 +12,8 @@ namespace StreamStudies
         private readonly Stream encryptedBaseStream;
         private readonly SymmetricAlgorithm algorithm;
         private CryptoStream currentCryptoStream;
+        private long position;
+        private int blockSizeInBytes;
 
         public SeekableDecryptorStream(Stream encryptedBaseStream, SymmetricAlgorithm algorithm)
         {
@@ -21,6 +23,8 @@ namespace StreamStudies
                 encryptedBaseStream,
                 algorithm.CreateDecryptor(),
                 CryptoStreamMode.Read);
+            this.position = 0;
+            this.blockSizeInBytes = algorithm.BlockSize / 8;
         }
 
         public override bool CanRead => this.currentCryptoStream.CanRead;
@@ -33,8 +37,8 @@ namespace StreamStudies
 
         public override long Position
         {
-            get => this.currentCryptoStream.Position;
-            set => this.currentCryptoStream.Position = value;
+            get => this.position;
+            set => this.SetPosition(value);
         }
 
         public override void Flush()
@@ -60,6 +64,33 @@ namespace StreamStudies
         public override void Write(byte[] buffer, int offset, int count)
         {
             this.currentCryptoStream.Write(buffer, offset, count);
+        }
+
+        private long SetPosition(long newPosition)
+        {
+            var wantedBlock = newPosition / this.blockSizeInBytes;
+            var iv = this.GetIv(wantedBlock);
+            this.encryptedBaseStream.Position = wantedBlock * this.blockSizeInBytes;
+            this.algorithm.IV = iv;
+            this.currentCryptoStream = new CryptoStream(
+                this.encryptedBaseStream,
+                this.algorithm.CreateDecryptor(),
+                CryptoStreamMode.Read);
+
+            return newPosition;
+        }
+
+        private byte[] GetIv(long wantedBlock)
+        {
+            var ivPosition = (wantedBlock - 1) * this.blockSizeInBytes;
+            this.encryptedBaseStream.Position = ivPosition;
+            using (var reader = new BinaryReader(
+                this.encryptedBaseStream,
+                System.Text.Encoding.UTF8,
+                leaveOpen: true))
+            {
+                return reader.ReadBytes(this.blockSizeInBytes);
+            }
         }
     }
 }

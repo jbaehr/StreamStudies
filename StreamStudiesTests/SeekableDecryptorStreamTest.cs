@@ -10,14 +10,15 @@
     [TestFixture()]
     public class SeekableDecryptorStreamTest
     {
-        private static readonly int BlockSize = 128;
-        private readonly byte[] InitVecor = Enumerable.Repeat<Byte>(0x00, BlockSize / 8).ToArray();
-        private readonly byte[] Key = Enumerable.Repeat<Byte>(0xff, BlockSize / 8).ToArray();
+        private static readonly int BlockSizeInBits = 128;
+        private static readonly int BlockSizeInBytes = BlockSizeInBits / 8;
+        private readonly byte[] InitVecor = Enumerable.Repeat<Byte>(0x00, BlockSizeInBytes).ToArray();
+        private readonly byte[] Key = Enumerable.Repeat<Byte>(0xff, BlockSizeInBytes).ToArray();
 
         [Test()]
         public void DecryptAllFromBeginning()
         {
-            var expectedPlainText = this.GetPlainText(4 * BlockSize);
+            var expectedPlainText = this.GetPlainText(4 * BlockSizeInBytes);
             Byte[] cypherText;
             using (var algorithm = this.GetSymmetricAlgorithm())
             {
@@ -36,12 +37,38 @@
             }
         }
 
+        [Test()]
+        public void DecryptMiddleBlock()
+        {
+            var plainText = this.GetPlainText(5 * BlockSizeInBytes);
+            Byte[] cypherText;
+            using (var algorithm = this.GetSymmetricAlgorithm())
+            {
+                cypherText = this.GetCypherText(plainText, algorithm);
+            }
+
+            using (var encryptedBaseStream = new MemoryStream(cypherText))
+            using (var algorithm = this.GetSymmetricAlgorithm())
+            using (var decryptedStream = new SeekableDecryptorStream(
+                encryptedBaseStream,
+                algorithm))
+            using (var reader = new BinaryReader(decryptedStream))
+            {
+                var offset = 2 * BlockSizeInBytes;
+                var length = BlockSizeInBytes;
+                var expected = new ArraySegment<Byte>(plainText, offset, length);
+                decryptedStream.Position = offset;
+                var actual = reader.ReadBytes(length);
+                CollectionAssert.AreEqual(expected, actual);
+            }
+        }
+
         private SymmetricAlgorithm GetSymmetricAlgorithm()
         {
             var algorithm = new AesManaged()
             {
                 Mode = CipherMode.CBC,
-                BlockSize = BlockSize,
+                BlockSize = BlockSizeInBits,
                 IV = InitVecor,
                 Key = Key,
             };
@@ -68,14 +95,12 @@
 
         private Byte[] GetPlainText(Int32 size)
         {
-            Assert.GreaterOrEqual(size, 0);
-            Assert.IsTrue(size % 2 == 0, $"{nameof(size)} must be a multiple of 2.");
+            Assert.GreaterOrEqual(256, size);
 
             var sampleData = new Byte[size];
-            for (Int32 i = 0, c = 0; i < size; c++)
+            for (Int32 i = 0; i < size; i++)
             {
-                sampleData[i++] = (Byte)c;
-                sampleData[i++] = (Byte)(c >> 8);
+                sampleData[i] = (Byte)i;
             }
 
             return sampleData;
