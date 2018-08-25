@@ -27,13 +27,13 @@ namespace StreamStudies
             this.blockSizeInBytes = algorithm.BlockSize / 8;
         }
 
-        public override bool CanRead => this.currentCryptoStream.CanRead;
+        public override bool CanRead => true;
 
-        public override bool CanSeek => this.currentCryptoStream.CanSeek;
+        public override bool CanSeek => this.encryptedBaseStream.CanSeek;
 
-        public override bool CanWrite => this.currentCryptoStream.CanWrite;
+        public override bool CanWrite => false;
 
-        public override long Length => this.currentCryptoStream.Length;
+        public override long Length => throw new NotImplementedException("Not yet done; need to evaluate padding.");
 
         public override long Position
         {
@@ -43,7 +43,7 @@ namespace StreamStudies
 
         public override void Flush()
         {
-            this.currentCryptoStream.Flush();
+            throw new NotSupportedException();
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -55,17 +55,17 @@ namespace StreamStudies
 
         public override long Seek(long offset, SeekOrigin origin)
         {
-            return this.currentCryptoStream.Seek(offset, origin);
+            throw new NotImplementedException($"Use the {nameof(Position)} setter for now.");
         }
 
         public override void SetLength(long value)
         {
-            this.currentCryptoStream.SetLength(value);
+            throw new NotSupportedException();
         }
 
         public override void Write(byte[] buffer, int offset, int count)
         {
-            this.currentCryptoStream.Write(buffer, offset, count);
+            throw new NotSupportedException();
         }
 
         private long SetPosition(long newPosition)
