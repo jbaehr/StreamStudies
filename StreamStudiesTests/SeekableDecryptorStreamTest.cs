@@ -37,6 +37,45 @@
             }
         }
 
+        [Test()]
+        public void DecryptMiddlePartialBlocks()
+        {
+            using (var t = new TestBed(5 * TestBed.BlockSizeInBytes))
+            {
+                var offset = (Int32)(2.5 * TestBed.BlockSizeInBytes);
+                var length = TestBed.BlockSizeInBytes;
+                var expected = new ArraySegment<Byte>(t.PlainText, offset, length);
+
+                t.DecryptedStream.Position = offset;
+
+                var actual = t.DecryptedReader.ReadBytes(length);
+                CollectionAssert.AreEqual(expected, actual);
+            }
+        }
+
+        [Test()]
+        public void DecryptAdvancesPosition()
+        {
+            using (var t = new TestBed(4))
+            {
+                t.DecryptedStream.ReadByte();
+                t.DecryptedStream.ReadByte();
+                t.DecryptedStream.ReadByte();
+
+                Assert.AreEqual(3, t.DecryptedStream.Position);
+            }
+        }
+
+        [Test()]
+        public void PositionRoundTrips()
+        {
+            using (var t = new TestBed(50))
+            {
+                t.DecryptedStream.Position = 20;
+                Assert.AreEqual(20, t.DecryptedStream.Position);
+            }
+        }
+
         private class TestBed : IDisposable
         {
             private static readonly int BlockSizeInBits = 128;

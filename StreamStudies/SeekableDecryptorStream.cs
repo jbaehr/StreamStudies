@@ -38,7 +38,7 @@ namespace StreamStudies
         public override long Position
         {
             get => this.position;
-            set => this.SetPosition(value);
+            set => this.position = this.SetPosition(value);
         }
 
         public override void Flush()
@@ -48,7 +48,9 @@ namespace StreamStudies
 
         public override int Read(byte[] buffer, int offset, int count)
         {
-            return this.currentCryptoStream.Read(buffer, offset, count);
+            var bytesRead = this.currentCryptoStream.Read(buffer, offset, count);
+            this.position += bytesRead;
+            return bytesRead;
         }
 
         public override long Seek(long offset, SeekOrigin origin)
@@ -69,19 +71,24 @@ namespace StreamStudies
         private long SetPosition(long newPosition)
         {
             var wantedBlock = newPosition / this.blockSizeInBytes;
-            var iv = this.GetIv(wantedBlock);
-            this.encryptedBaseStream.Position = wantedBlock * this.blockSizeInBytes;
-            this.algorithm.IV = iv;
+            this.algorithm.IV = this.GetIv(wantedBlock);
+            var blockBoundary = wantedBlock * this.blockSizeInBytes;
+            this.encryptedBaseStream.Position = blockBoundary;
             this.currentCryptoStream = new CryptoStream(
                 this.encryptedBaseStream,
                 this.algorithm.CreateDecryptor(),
                 CryptoStreamMode.Read);
+
+            // we can be sure that this read succeeds completely as we read less then a block
+            var bytesToDiscard = new Byte[newPosition - blockBoundary];
+            this.currentCryptoStream.Read(bytesToDiscard, 0, bytesToDiscard.Length);
 
             return newPosition;
         }
 
         private byte[] GetIv(long wantedBlock)
         {
+            // ChypherMode.CBC uses the cypher text of the prevous block as as IV.
             var ivPosition = (wantedBlock - 1) * this.blockSizeInBytes;
             this.encryptedBaseStream.Position = ivPosition;
             using (var reader = new BinaryReader(
