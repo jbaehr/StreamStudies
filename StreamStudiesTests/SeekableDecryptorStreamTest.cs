@@ -62,7 +62,7 @@
                     writer.Write(plainText);
                 }
 
-                return memoryStream.GetBuffer();
+                return memoryStream.ToArray();
             }
         }
 
