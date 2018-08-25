@@ -11,6 +11,7 @@ namespace StreamStudies
     {
         private readonly Stream encryptedBaseStream;
         private readonly SymmetricAlgorithm algorithm;
+        private readonly byte[] initialIv;
         private CryptoStream currentCryptoStream;
         private long position;
         private int blockSizeInBytes;
@@ -19,6 +20,7 @@ namespace StreamStudies
         {
             this.encryptedBaseStream = encryptedBaseStream;
             this.algorithm = algorithm;
+            this.initialIv = algorithm.IV;
             this.currentCryptoStream = new CryptoStream(
                 encryptedBaseStream,
                 algorithm.CreateDecryptor(),
@@ -88,6 +90,12 @@ namespace StreamStudies
 
         private byte[] GetIv(long wantedBlock)
         {
+            if (wantedBlock == 0)
+            {
+                this.encryptedBaseStream.Position = 0;
+                return this.initialIv;
+            }
+
             // ChypherMode.CBC uses the cypher text of the prevous block as as IV.
             var ivPosition = (wantedBlock - 1) * this.blockSizeInBytes;
             this.encryptedBaseStream.Position = ivPosition;

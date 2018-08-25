@@ -76,6 +76,17 @@
             }
         }
 
+        [Test()]
+        public void SeekIntoFirstBlock()
+        {
+            using (var t = new TestBed(2 * TestBed.BlockSizeInBytes))
+            {
+                var somewhereInFirstBlock = (Int32)(0.5 * TestBed.BlockSizeInBytes);
+                t.DecryptedStream.Position = somewhereInFirstBlock;
+                Assert.AreEqual(t.PlainText[somewhereInFirstBlock], t.DecryptedStream.ReadByte());
+            }
+        }
+
         private class TestBed : IDisposable
         {
             private static readonly int BlockSizeInBits = 128;
