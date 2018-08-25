@@ -31,7 +31,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SeakableCryptoStreamTest.cs" />
+    <Compile Include="SeekableDecryptorStreamTest.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

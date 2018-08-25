@@ -8,7 +8,7 @@
     using StreamStudies;
 
     [TestFixture()]
-    public class SeakableCryptoStreamTest
+    public class SeekableDecryptorStreamTest
     {
         private static readonly int BlockSize = 128;
         private readonly byte[] InitVecor = Enumerable.Repeat<Byte>(0x00, BlockSize / 8).ToArray();
@@ -26,7 +26,7 @@
 
             using (var encryptedBaseStream = new MemoryStream(cypherText))
             using (var algorithm = this.GetSymmetricAlgorithm())
-            using (var decryptedStream = new SeakableCryptoStream(
+            using (var decryptedStream = new SeekableDecryptorStream(
                 encryptedBaseStream,
                 algorithm))
             using (var reader = new BinaryReader(decryptedStream))

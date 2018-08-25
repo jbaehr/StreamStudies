@@ -4,13 +4,16 @@ using System.Security.Cryptography;
 
 namespace StreamStudies
 {
-    public class SeakableCryptoStream : Stream
+    /// <summary>
+    /// A crypto stream with random read access.
+    /// </summary>
+    public class SeekableDecryptorStream : Stream
     {
         private readonly Stream encryptedBaseStream;
         private readonly SymmetricAlgorithm algorithm;
         private CryptoStream currentCryptoStream;
 
-        public SeakableCryptoStream(Stream encryptedBaseStream, SymmetricAlgorithm algorithm)
+        public SeekableDecryptorStream(Stream encryptedBaseStream, SymmetricAlgorithm algorithm)
         {
             this.encryptedBaseStream = encryptedBaseStream;
             this.algorithm = algorithm;
